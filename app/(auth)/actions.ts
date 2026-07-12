@@ -44,8 +44,8 @@ export async function signIn(
 /**
  * Criar conta com email + senha. Se a sessao vier na hora (confirmacao de
  * e-mail desabilitada), dispara o onboarding: semeia as 11 entidades vazias do
- * novo usuario e entra na app. Se a confirmacao estiver ligada (sem sessao),
- * informa que e preciso confirmar o e-mail.
+ * novo usuario e leva ao wizard de onboarding (`/onboarding`). Se a confirmacao
+ * estiver ligada (sem sessao), informa que e preciso confirmar o e-mail.
  */
 export async function signUp(
   _prev: AuthState,
@@ -86,5 +86,7 @@ export async function signUp(
   // Onboarding: semeia os cards vazios do tenant recem-criado (idempotente).
   await withUserContext(() => seedEntitiesForUser());
 
-  redirect("/founder");
+  // Coleta os dados do founder (nome, WhatsApp, empresa, tamanho do time) no
+  // wizard de onboarding antes de entrar na app.
+  redirect("/onboarding");
 }
