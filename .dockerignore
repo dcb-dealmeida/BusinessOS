@@ -1,0 +1,11 @@
+.git
+node_modules
+.next
+content
+data
+.businessos
+.env*
+!.env.example
+coverage
+storybook-static
+*.log

@@ -1,0 +1,56 @@
+name: businessos
+
+x-businessos-image: &businessos-image
+  image: businessos:${BUSINESSOS_IMAGE_TAG:-local}
+  build:
+    context: .
+    args:
+      PNPM_VERSION: ${PNPM_VERSION:-10.34.0}
+
+x-businessos-runtime: &businessos-runtime
+  <<: *businessos-image
+  environment:
+    CONTENT_STORE: file
+    CONTENT_ROOT: /app/content
+    FOUNDER_EMAIL: ${FOUNDER_EMAIL:-founder@example.com}
+    NODE_ENV: production
+  volumes:
+    - businessos_content:/app/content
+  user: "1001:1001"
+
+services:
+  content-init:
+    <<: *businessos-image
+    command: ["/bin/sh", "-ec", "mkdir -p /app/content && chown -R 1001:1001 /app/content"]
+    restart: "no"
+    user: "0:0"
+    volumes:
+      - businessos_content:/app/content
+
+  app:
+    <<: *businessos-runtime
+    command: ["pnpm", "start"]
+    depends_on:
+      content-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/founder').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    ports:
+      - "127.0.0.1:${BUSINESSOS_PORT:-3000}:3000"
+    restart: unless-stopped
+
+  seed:
+    <<: *businessos-runtime
+    command: ["pnpm", "seed"]
+    depends_on:
+      content-init:
+        condition: service_completed_successfully
+    profiles: ["seed"]
+    restart: "no"
+
+volumes:
+  businessos_content:
